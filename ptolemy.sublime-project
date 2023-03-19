@@ -1,0 +1,17 @@
+{
+	"folders": [
+        {
+            "folder_exclude_patterns": [
+                ".git",
+                "build",
+                "node_modules",
+                "*-dev",
+            ],
+            "file_exclude_patterns": [
+                "*.LICENSE.txt",
+                "web-src/static/*.min.*",
+            ],
+            "path": "."
+        }
+    ]
+}
