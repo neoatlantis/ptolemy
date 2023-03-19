@@ -12,6 +12,7 @@
   "author": "NeoAtlantis",
   "license": "GPL-2.0",
   "dependencies": {
+    "openpgp": "^5.7.0",
     "uuid": "^9.0.0",
     "vue": "^3.2.47",
     "vue-cli": "^2.9.6",
