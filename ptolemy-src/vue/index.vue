@@ -27,6 +27,7 @@
         <hr />
 
         <div>
+            <ModuleCertificates v-if="'certificates'==nav_current"></ModuleCertificates>
             <ModuleNotebook v-if="'notebook'==nav_current"></ModuleNotebook>
         </div>
         
@@ -40,6 +41,7 @@
 </template>
 <script>
 
+import ModuleCertificates from "sfc/ModuleCertificates/index.vue";
 import ModuleNotebook from "sfc/ModuleNotebook/index.vue";
 
 
@@ -67,6 +69,7 @@ export default {
     }},
 
     components: {
+        ModuleCertificates,
         ModuleNotebook,
     }
 }
