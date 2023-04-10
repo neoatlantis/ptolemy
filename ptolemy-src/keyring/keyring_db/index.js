@@ -1,17 +1,14 @@
 /*
- * Keyring Database Access
+ * KeyringDB is the storage middleware for Keyring.
  *
- * Provides password protected keyring access. Keyring is a key-value based
- * database, each entry is protected (encrypted) with its individual key, which
- * are being derived from the master key. The master key is stored encrypted
- * with user password.
+ * It supports following functions:
+ *  - create and unlock a database
+ *  - lock it again
+ *  - save, retrieve and remove data as key-value storage
  *
- * Private PGP keys, when being imported into keyring, must be decrypted with
- * their own passphrase (if set). The unencrypted private key is stored using
- * keyring's own encryption unless being exported (again), upon which the user
- * must set an individual passphrase for the exported private key. In this way,
- * the system does not require the user to decrypt each private key when
- * receiving or signing messages, once the keyring is unlocked.
+ * By default, all data is stored in localStorage of browser. By providing
+ * another asynchronous API similar to localStorage, it's possible to migrate
+ * the storage to other mechanisms.
  */
 
 import _ from "lodash";
@@ -39,7 +36,7 @@ class KeyringDB extends events.EventEmitter {
 
     #master_key_cryptor = null;
 
-    async create(password){
+    async #unlock_with_create(password, { create=false }){
         try{
             this.#master_key_cryptor = 
                 await get_master_key_cryptor.call(this, {
@@ -47,21 +44,21 @@ class KeyringDB extends events.EventEmitter {
                     password,
                     create: true,
                 });
+            let keys = await this.keys();
+            this.emit("storage", {
+                add: keys,
+            });
         } catch(e){
             throw e;
         }
     }
 
-    async unlock(password){
-        try{
-            this.#master_key_cryptor = 
-                await get_master_key_cryptor.call(this, {
-                    db: this.#db_provider,
-                    password,
-                });
-        } catch(e){
-            throw e;
-        }
+    create(password){
+        return this.#unlock_with_create(password, { create: true });
+    }
+
+    unlock(password){
+        return this.#unlock_with_create(password, { create: false });
     }
 
     async lock(){
@@ -86,9 +83,17 @@ class KeyringDB extends events.EventEmitter {
         }
     }
 
+    async keys(){
+        this.#assure_unlocked();
+        let keys = await this.#db_provider.getKeys();
+        return keys.filter((k)=>{
+            return !_.startsWith(k, "$");
+        });
+    }
+
     async set(id, data){
         this.#assure_unlocked();
-        this.#assure_id(id);       
+        this.#assure_id(id);  
 
         // Stores some random data.
         let message = await openpgp.createMessage({
@@ -96,7 +101,9 @@ class KeyringDB extends events.EventEmitter {
         });
         let encrypted = await this.#master_key_cryptor.encrypt(message);
 
-        return await this.#db_provider.setItem(id, encrypted);
+        let ret = await this.#db_provider.setItem(id, encrypted);
+        this.emit("storage", { add: [id] });
+        return ret;
     }
 
     async get(id){
@@ -117,11 +124,19 @@ class KeyringDB extends events.EventEmitter {
     async remove(id){
         this.#assure_unlocked();
         this.#assure_id(id);
-        return this.#db_provider.removeItem(id);
+        let ret = this.#db_provider.removeItem(id);
+        this.emit("storage", { remove: [id]});
+        return ret;
     }
 
 
 }
 
+let exported = null;
 
-export default new KeyringDB(AsyncLocalStorage);
+export default function get_or_init(){
+    if(exported == null){
+        exported = new KeyringDB(AsyncLocalStorage);
+    }
+    return exported;
+}

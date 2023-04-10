@@ -9,12 +9,16 @@ a
 </template>
 <script>
 
-import keyring from "app/keyring/keyring_db";
+import get_keyring from "app/keyring";
 
 (async function(){
-    await keyring.create("test");
-    await keyring.set("test", "alkdfjsaklfajsdklj;f");
-    console.log(await keyring.get("test"));
+    let keyring = get_keyring();
+
+    await keyring.unlock("test");
+
+    
+    
+    
 })();
 
 

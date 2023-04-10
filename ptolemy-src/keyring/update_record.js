@@ -5,6 +5,13 @@
  * item is consistent with private key.
  */
 
-export default async function(store_id){
+export default async function(db, id){
+
+    console.log("update record for:", id);
+
+    let decrypted = await db.get(id);
+    if(!decrypted) return;
+
+    
 
 }
